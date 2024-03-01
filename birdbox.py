@@ -249,8 +249,7 @@ def authenticate_youtube_api():
                 sys.exit(1)
 
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                CLIENT_SECRETS_FILE, SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(config.client_secrets_file, SCOPES)
             creds = flow.run_local_server(port=0)
 
         # Save the credentials for the next run

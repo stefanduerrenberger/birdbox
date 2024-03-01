@@ -119,7 +119,7 @@ def create_youtube_live_broadcast(youtube, title):
     logging.debug("Sending Youtube Live API request to insert a broadcast. Title: %s, Start Time: %s", title,
                   start_time)
     broadcast = youtube.liveBroadcasts().insert(
-        part="snippet,status",
+        part="snippet,status,contentDetails",
         body=dict(
             snippet=dict(
                 title=title,
@@ -127,6 +127,9 @@ def create_youtube_live_broadcast(youtube, title):
             ),
             status=dict(
                 privacyStatus="public"
+            ),
+            contentDetails=dict(
+                enableAutoStop=True
             )
         )
     ).execute()

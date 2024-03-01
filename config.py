@@ -9,6 +9,9 @@ yt_channel_url = ''
 # YouTube API credentials file path, used to check if the livestream is still running
 client_secrets_file = "client_secret.json"
 
+# Token JSON file
+token_json = "/home/pi/birdbox/token.json"
+
 # How often to check if the livestream is running
 livestream_check_frequency = 1200
 

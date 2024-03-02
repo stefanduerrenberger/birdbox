@@ -12,6 +12,12 @@ client_secrets_file = "client_secret.json"
 # Token JSON file
 token_json = "/home/pi/birdbox/token.json"
 
+# Lock file name. The lock file is used to prevent the script from running in parallel
+lock_file = '/home/pi/birdbox/birdbox.lock'
+
+# Time in seconds the lock file is valid until deleted
+max_lockfile_age = 600
+
 # How often to check if the livestream is running
 livestream_check_frequency = 1200
 

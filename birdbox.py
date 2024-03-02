@@ -246,7 +246,7 @@ def authenticate_youtube_api():
             except RefreshError as e:
                 logging.error(e, exc_info=True)
                 # It's possible we need to delete the token file at this point and regenerate it next run. Further testing needed.
-                sys.exit(1)
+                exit_script(1)
 
         else:
             flow = InstalledAppFlow.from_client_secrets_file(config.client_secrets_file, SCOPES)
@@ -260,8 +260,44 @@ def authenticate_youtube_api():
     return build('youtube', 'v3', credentials=creds)
 
 
+def create_lockfile():
+    logging.debug("Writing lock file: " + config.lock_file)
+    with open(config.lock_file, "w") as file:
+        file.write(str(int(time.time())))
+
+
+def check_lockfile():
+    if os.path.exists(config.lock_file):
+        with open(config.lock_file, "r") as file:
+            timestamp = int(file.read().strip())
+            current_time = int(time.time())
+            logging.debug("Found lock file with timestamp" + str(timestamp) + ", current timestamp: " + str(current_time))
+            if current_time - timestamp < config.max_lockfile_age:
+                logging.warning("Script execution aborted: Another instance of the script is already running.")
+                exit_script(0, False)
+
+
+def delete_lockfile():
+    if os.path.exists(config.lock_file):
+        logging.debug("Lockfile deleted.")
+        os.remove(config.lock_file)
+
+
+def exit_script(code=0, remove_lock_file=True):
+    if remove_lock_file:
+        delete_lockfile()
+    sys.exit(code)
+
+
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',filename=config.log_file, encoding='utf-8', level=config.log_level)
+    logging.info("Birdbox script started")
+
+    # Check the lock file and abort if the script is already running
+    check_lockfile()
+
+    # Create a lock file to prevent parallel script execution
+    create_lockfile()
 
     last_events = {
         'last_livestream_check': 0,
@@ -327,13 +363,13 @@ def main():
                     transition_youtube_broadcast_to_testing(youtube, broadcast_id, stream_id)
                 except LivestreamNotActiveError as e:
                     logging.error(e, exc_info=True)
-                    sys.exit(1)
+                    exit_script(1)
 
                 try:
                     transition_youtube_broadcast_to_live(youtube, broadcast_id)
                 except BroadcastNotTestingError as e:
                     logging.error(e, exc_info=True)
-                    sys.exit(1)
+                    exit_script(1)
 
                 last_events['last_livestream_restart'] = now
             else:
@@ -345,6 +381,9 @@ def main():
 
     logging.debug("Saving data to data json file: " + str(last_events))
     save_to_json(last_events, config.json_save_file)
+
+    # Delete lockfile at the end of execution
+    delete_lockfile()
 
 
 if __name__ == "__main__":

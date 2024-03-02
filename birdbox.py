@@ -300,6 +300,35 @@ def reboot_at_configured_time():
         os.system("sudo reboot")
 
 
+def restart_livestream(youtube):
+    logging.debug("Check for running ffmpeg processes")
+    if check_ffmpeg_process():
+        logging.debug("Found process, attempt to kill ffmpeg process")
+        kill_process_by_name("ffmpeg")
+    else:
+        logging.debug("No ffmpeg process running")
+
+    # Create a new livestream
+    title = "Bird Box Basel " + datetime.now().strftime("%Y-%m-%d")
+    ingestion_address, stream_name, broadcast_id, stream_id = create_youtube_live_broadcast(youtube, title)
+    logging.info("Livestream created. Ingestion Address: %s, Stream Name: %s, Broadcast ID: %s", ingestion_address,
+                 stream_name, broadcast_id)
+
+    run_streaming_command(ingestion_address, stream_name)
+
+    try:
+        transition_youtube_broadcast_to_testing(youtube, broadcast_id, stream_id)
+    except LivestreamNotActiveError as e:
+        logging.error(e, exc_info=True)
+        exit_script(1)
+
+    try:
+        transition_youtube_broadcast_to_live(youtube, broadcast_id)
+    except BroadcastNotTestingError as e:
+        logging.error(e, exc_info=True)
+        exit_script(1)
+
+
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',filename=config.log_file, encoding='utf-8', level=config.log_level)
     logging.info("Birdbox script started")
@@ -359,37 +388,20 @@ def main():
             if not channel_is_live:
                 logging.info("There is no live stream currently, attempting to start a stream")
 
-                logging.debug("Check for running ffmpeg processes")
-                if check_ffmpeg_process():
-                    logging.debug("Found process, attempt to kill ffmpeg process")
-                    kill_process_by_name("ffmpeg")
-                else:
-                    logging.debug("No ffmpeg process running")
-
-                # Create a new livestream
-                title = "Bird Box Basel " + datetime.now().strftime("%Y-%m-%d")
-                ingestion_address, stream_name, broadcast_id, stream_id = create_youtube_live_broadcast(youtube, title)
-                logging.info("Livestream created. Ingestion Address: %s, Stream Name: %s, Broadcast ID: %s", ingestion_address, stream_name, broadcast_id)
-
-                run_streaming_command(ingestion_address, stream_name)
-
-                try:
-                    transition_youtube_broadcast_to_testing(youtube, broadcast_id, stream_id)
-                except LivestreamNotActiveError as e:
-                    logging.error(e, exc_info=True)
-                    exit_script(1)
-
-                try:
-                    transition_youtube_broadcast_to_live(youtube, broadcast_id)
-                except BroadcastNotTestingError as e:
-                    logging.error(e, exc_info=True)
-                    exit_script(1)
+                restart_livestream(youtube)
 
                 last_events['last_livestream_restart'] = now
             else:
                 logging.info("A live stream is currently active on the channel. Nothing to do.")
         else:
             logging.info("checked livestream last %s seconds ago. Skipping.", last_livestream_check)
+
+        # If the livestream is older than config.livestream_restart_frequency
+        if last_events['last_livestream_restart'] + config.livestream_restart_frequency < now:
+            logging.info("There is running for longer than the configured restart frequency. Attempting restart.")
+            restart_livestream(youtube)
+
+            last_events['last_livestream_restart'] = now
     else:
         logging.warning("No internet connection.")
 

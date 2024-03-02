@@ -25,6 +25,9 @@ livestream_check_frequency = 1200
 # Use the same frequency as above to use only the API. All other checks will using scraping, which is less reliable.
 livestream_check_api_frequency = 1200
 
+# How often the livestream ist restarted in seconds. Youtube only saves videos that are shorter than 12 hours
+livestream_restart_frequency = 30600
+
 # Reboot time to reboot once per day. Format: "hour:minute". Set to False to disable.
 reboot_time = "00:01"
 

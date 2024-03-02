@@ -110,6 +110,26 @@ def is_channel_live_api(youtube, channel_id):
         return False
 
 
+def get_video_url(youtube, broadcast_id):
+    # Retrieve information about the broadcast
+    response = youtube.liveBroadcasts().list(
+        part='snippet',
+        id=broadcast_id
+    ).execute()
+
+    logging.debug("Retrieved broadcast info: %s", response)
+
+    # Extract the video ID
+    video_id = response['items'][0]['snippet']['thumbnails']['default']['url'].split('/')[-2]
+
+    # Construct the video URL
+    video_url = f'https://www.youtube.com/watch?v={video_id}'
+
+    logging.info("Video URL: %s", video_url)
+
+    return video_url
+
+
 def is_channel_live_scraping(channel_url):
     response = requests.get(channel_url)
     if response.status_code == 200:
@@ -337,6 +357,30 @@ def restart_livestream(youtube):
         logging.error(e, exc_info=True)
         exit_script(1)
 
+    return broadcast_id
+
+
+def update_website(video_url):
+    # Data to be sent to the endpoint
+    data = {
+        'secret': config.website_api_secret,
+        'video_url': video_url
+    }
+
+    logging.debug("Updating the website using the URL %s", config.website_api_url)
+
+    # Send POST request to the endpoint
+    response = requests.post(config.website_api_url, data=data, timeout=10)
+
+    # Check response status code
+    if response.status_code == 200:
+        # Request was successful
+        result = response.json()
+        logging.info("Website was updated with current video URL.")
+    else:
+        # Request failed
+        logging.warning("Updating website failed. Response: %s", response)
+
 
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',filename=config.log_file, encoding='utf-8', level=config.log_level)
@@ -351,21 +395,23 @@ def main():
     # Create a lock file to prevent parallel script execution
     create_lockfile()
 
-    last_events = {
+    persistent_data = {
         'last_livestream_check': 0,
         'last_livestream_check_api': 0,
         'last_livestream_restart': 0,
+        'current_broadcast_id': '',
+        'current_stream_url': ''
     }
 
     file_contents = load_from_json(config.json_save_file)
 
     if file_contents:
-        last_events = file_contents
+        persistent_data = file_contents
         logging.debug("Loaded variables from data file")
     else:
         logging.debug("Could not load data file or file empty")
 
-    logging.info("last_events: " + str(last_events))
+    logging.info("last_events: " + str(persistent_data))
 
     youtube = authenticate_youtube_api()
 
@@ -374,20 +420,20 @@ def main():
         healthchecks_ping(config.healthchecks_id_internet_connection)
 
         now = time.time()
-        last_livestream_check = now - last_events['last_livestream_check']
-        last_livestream_check_api = now - last_events['last_livestream_check_api']
+        last_livestream_check = now - persistent_data['last_livestream_check']
+        last_livestream_check_api = now - persistent_data['last_livestream_check_api']
 
         logging.debug("Last livestream check was done %s seconds ago", last_livestream_check)
         logging.debug("The Youtube API was last used %s seconds ago", last_livestream_check_api)
 
         if last_livestream_check > config.livestream_check_frequency:
             logging.info("Starting livestream check")
-            last_events['last_livestream_check'] = now
+            persistent_data['last_livestream_check'] = now
 
             if last_livestream_check_api > config.livestream_check_api_frequency:
                 # API has a limit and could only be used every 20 minutes daily
                 logging.info("Use the Youtube API to check if the channel is live")
-                last_events['last_livestream_check_api'] = now
+                persistent_data['last_livestream_check_api'] = now
                 channel_is_live = is_channel_live_api(youtube, config.yt_channel_id)
 
             else:
@@ -398,11 +444,14 @@ def main():
             if not channel_is_live:
                 logging.info("There is no live stream currently, attempting to start a stream")
 
-                restart_livestream(youtube)
+                broadcast_id = restart_livestream(youtube)
 
                 healthchecks_ping(config.healthchecks_id_stream)
 
-                last_events['last_livestream_restart'] = now
+                # Update persistent_data with broadcast ID, stream URL and timestamp
+                persistent_data['current_broadcast_id'] = broadcast_id
+                persistent_data['current_stream_url'] = get_video_url(youtube, broadcast_id)
+                persistent_data['last_livestream_restart'] = now
             else:
                 logging.info("A live stream is currently active on the channel. Nothing to do.")
                 healthchecks_ping(config.healthchecks_id_stream)
@@ -410,16 +459,21 @@ def main():
             logging.info("checked livestream last %s seconds ago. Skipping.", last_livestream_check)
 
         # If the livestream is older than config.livestream_restart_frequency
-        if last_events['last_livestream_restart'] + config.livestream_restart_frequency < now:
+        if persistent_data['last_livestream_restart'] + config.livestream_restart_frequency < now:
             logging.info("There is running for longer than the configured restart frequency. Attempting restart.")
-            restart_livestream(youtube)
+            broadcast_id = restart_livestream(youtube)
 
-            last_events['last_livestream_restart'] = now
+            # Update persistent_data with broadcast ID, stream URL and timestamp
+            persistent_data['current_broadcast_id'] = broadcast_id
+            persistent_data['current_stream_url'] = get_video_url(youtube, broadcast_id)
+            persistent_data['last_livestream_restart'] = now
     else:
         logging.warning("No internet connection.")
 
-    logging.debug("Saving data to data json file: " + str(last_events))
-    save_to_json(last_events, config.json_save_file)
+    update_website(persistent_data['current_stream_url'])
+
+    logging.debug("Saving data to data json file: " + str(persistent_data))
+    save_to_json(persistent_data, config.json_save_file)
 
     # Delete lockfile at the end of execution
     delete_lockfile()

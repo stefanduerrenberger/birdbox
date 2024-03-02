@@ -37,8 +37,15 @@ healthchecks_id_internet_connection = ""
 # Healthchecks.io check ID for stream uptime
 healthchecks_id_stream = ""
 
+# Website update API URL
+website_api_url = ""
+
+# Secret for authentication with the website API
+website_api_secret = ""
+
 # Log level: logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL
 log_level = logging.DEBUG
 log_file = "birdbox.log"
 
+# JSON save file for persistent data between runs
 json_save_file = "data.json"

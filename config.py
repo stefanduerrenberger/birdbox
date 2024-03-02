@@ -31,6 +31,12 @@ livestream_restart_frequency = 30600
 # Reboot time to reboot once per day. Format: "hour:minute". Set to False to disable.
 reboot_time = "00:01"
 
+# Healthchecks.io check ID for internet connection (every minute)
+healthchecks_id_internet_connection = ""
+
+# Healthchecks.io check ID for stream uptime
+healthchecks_id_stream = ""
+
 # Log level: logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL
 log_level = logging.DEBUG
 log_file = "birdbox.log"

@@ -54,6 +54,15 @@ def check_internet_connection():
         return False
 
 
+def healthchecks_ping(check_id):
+    try:
+        url = "https://hc-ping.com/" + check_id
+        logging.debug("Pinging healthchecks.io ID " + check_id)
+        requests.get(url, timeout=10)
+    except requests.RequestException as e:
+        logging.warning("Healthckecks.io ping unsuccessful: %s", e)
+
+
 def run_streaming_command(ingestion_address, stream_name):
     logging.info("Attempt to start streaming")
     url = ingestion_address + "/" + stream_name
@@ -362,6 +371,7 @@ def main():
 
     if check_internet_connection():
         logging.debug("Internet connection OK")
+        healthchecks_ping(config.healthchecks_id_internet_connection)
 
         now = time.time()
         last_livestream_check = now - last_events['last_livestream_check']
@@ -390,9 +400,12 @@ def main():
 
                 restart_livestream(youtube)
 
+                healthchecks_ping(config.healthchecks_id_stream)
+
                 last_events['last_livestream_restart'] = now
             else:
                 logging.info("A live stream is currently active on the channel. Nothing to do.")
+                healthchecks_ping(config.healthchecks_id_stream)
         else:
             logging.info("checked livestream last %s seconds ago. Skipping.", last_livestream_check)
 

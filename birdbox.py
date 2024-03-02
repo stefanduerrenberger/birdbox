@@ -289,9 +289,23 @@ def exit_script(code=0, remove_lock_file=True):
     sys.exit(code)
 
 
+def reboot_at_configured_time():
+    current_time = time.localtime()
+
+    # Get configured reboot time
+    reboot_hour, reboot_minute = map(int, config.reboot_time.split(":"))
+
+    if current_time.tm_hour == reboot_hour and current_time.tm_min == reboot_minute:
+        logging.info("Rebooting the Raspberry Pi...")
+        os.system("sudo reboot")
+
+
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',filename=config.log_file, encoding='utf-8', level=config.log_level)
     logging.info("Birdbox script started")
+
+    if config.reboot_time is not None:
+        reboot_at_configured_time()
 
     # Check the lock file and abort if the script is already running
     check_lockfile()

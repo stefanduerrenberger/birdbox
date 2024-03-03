@@ -110,7 +110,7 @@ def is_channel_live_api(youtube, channel_id):
         return False
 
 
-def get_video_url(youtube, broadcast_id):
+def get_video_id(youtube, broadcast_id):
     # Retrieve information about the broadcast
     response = youtube.liveBroadcasts().list(
         part='snippet',
@@ -122,12 +122,9 @@ def get_video_url(youtube, broadcast_id):
     # Extract the video ID
     video_id = response['items'][0]['snippet']['thumbnails']['default']['url'].split('/')[-2]
 
-    # Construct the video URL
-    video_url = f'https://www.youtube.com/watch?v={video_id}'
+    logging.info("Video ID: %s", video_id)
 
-    logging.info("Video URL: %s", video_url)
-
-    return video_url
+    return video_id
 
 
 def is_channel_live_scraping(channel_url):
@@ -360,11 +357,11 @@ def restart_livestream(youtube):
     return broadcast_id
 
 
-def update_website(video_url):
+def update_website(video_id):
     # Data to be sent to the endpoint
     data = {
         'secret': config.website_api_secret,
-        'video_url': video_url
+        'video_id': video_id
     }
 
     logging.debug("Updating the website using the URL %s", config.website_api_url)
@@ -400,7 +397,7 @@ def main():
         'last_livestream_check_api': 0,
         'last_livestream_restart': 0,
         'current_broadcast_id': '',
-        'current_stream_url': ''
+        'current_video_id': ''
     }
 
     file_contents = load_from_json(config.json_save_file)
@@ -450,7 +447,7 @@ def main():
 
                 # Update persistent_data with broadcast ID, stream URL and timestamp
                 persistent_data['current_broadcast_id'] = broadcast_id
-                persistent_data['current_stream_url'] = get_video_url(youtube, broadcast_id)
+                persistent_data['current_video_id'] = get_video_id(youtube, broadcast_id)
                 persistent_data['last_livestream_restart'] = now
             else:
                 logging.info("A live stream is currently active on the channel. Nothing to do.")
@@ -465,12 +462,12 @@ def main():
 
             # Update persistent_data with broadcast ID, stream URL and timestamp
             persistent_data['current_broadcast_id'] = broadcast_id
-            persistent_data['current_stream_url'] = get_video_url(youtube, broadcast_id)
+            persistent_data['current_video_id'] = get_video_id(youtube, broadcast_id)
             persistent_data['last_livestream_restart'] = now
     else:
         logging.warning("No internet connection.")
 
-    update_website(persistent_data['current_stream_url'])
+    update_website(persistent_data['current_video_id'])
 
     logging.debug("Saving data to data json file: " + str(persistent_data))
     save_to_json(persistent_data, config.json_save_file)

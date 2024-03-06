@@ -324,6 +324,7 @@ def reboot_at_configured_time():
     if current_time.tm_hour == reboot_hour and current_time.tm_min == reboot_minute:
         logging.info("Rebooting the Raspberry Pi...")
         os.system("sudo reboot")
+        sys.exit()
 
 
 def restart_livestream(youtube):
@@ -383,6 +384,7 @@ def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',filename=config.log_file, encoding='utf-8', level=config.log_level)
     logging.info("Birdbox script started")
 
+    # Reboot if it's time
     if config.reboot_time is not None:
         reboot_at_configured_time()
 
@@ -408,7 +410,7 @@ def main():
     else:
         logging.debug("Could not load data file or file empty")
 
-    logging.info("last_events: " + str(persistent_data))
+    logging.info("persistent_data: " + str(persistent_data))
 
     youtube = authenticate_youtube_api()
 
@@ -432,7 +434,6 @@ def main():
                 logging.info("Use the Youtube API to check if the channel is live")
                 persistent_data['last_livestream_check_api'] = now
                 channel_is_live = is_channel_live_api(youtube, config.yt_channel_id)
-
             else:
                 # Scraping works every time, but is less reliable
                 logging.info("Use scraping to check if the channel is live")
@@ -457,7 +458,7 @@ def main():
 
         # If the livestream is older than config.livestream_restart_frequency
         if persistent_data['last_livestream_restart'] + config.livestream_restart_frequency < now:
-            logging.info("There is running for longer than the configured restart frequency. Attempting restart.")
+            logging.info("The livestream is running for longer than the configured restart frequency. Attempting restart.")
             broadcast_id = restart_livestream(youtube)
 
             # Update persistent_data with broadcast ID, stream URL and timestamp

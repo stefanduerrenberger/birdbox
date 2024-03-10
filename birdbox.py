@@ -68,7 +68,8 @@ def run_streaming_command(ingestion_address, stream_name):
     url = ingestion_address + "/" + stream_name
     logging.debug("Streaming URL: %s", url)
 
-    command = "raspivid -o - -t 0 -w 1920 -h 1080 -fps 25 -b 4000000 -g 50 | ffmpeg -re -ar 44100 -ac 2 -acodec pcm_s16le -f s16le -ac 2 -i /dev/zero -f h264 -i - -vcodec copy -acodec aac -ab 128k -g 50 -strict experimental -f flv " + url
+    # Runs the command that streams raspivid to Youtube
+    command = 'raspivid -o - -t 0 -w 1920 -h 1080 -fps 25 -b 4000000 -g 50 --annotate 12 --annotate "%Y-%m-%d %X" | ffmpeg -re -ar 44100 -ac 2 -acodec pcm_s16le -f s16le -ac 2 -i /dev/zero -f h264 -i - -vcodec copy -acodec aac -ab 128k -g 50 -strict experimental -f flv ' + url
     process = subprocess.Popen(command, shell=True)
 
 

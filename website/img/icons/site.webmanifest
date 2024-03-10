@@ -1,0 +1,19 @@
+{
+    "name": "Bird Box",
+    "short_name": "Bird Box",
+    "icons": [
+        {
+            "src": "/img/icons/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/img/icons/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#f8ebd8",
+    "background_color": "#f8ebd8",
+    "display": "standalone"
+}

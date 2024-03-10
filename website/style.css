@@ -1,0 +1,167 @@
+:root {
+    --color-yellow: #D9BA6A;
+    --color-beige: #F8EBD8;
+    --color-grey: #a2a6a2;
+    --color-brownlight: #d2bf93;
+    --color-brown: #796C4C;
+    --color-black: #201F1D;
+}
+
+/*
+  Typography
+ */
+
+
+h1, h2 {
+    line-height: 1;
+}
+
+h1 {
+    display: inline-block;
+    margin: 1rem 0 2rem 0;
+
+    font-family: "Neucha", cursive;
+    font-size: 3rem;
+    border-bottom: solid 4px var(--color-black);
+}
+
+h2 {
+    margin-top: 4rem;
+
+    font-weight: 700;
+    font-style: normal;
+}
+
+
+a {
+    color: var(--color-black);
+}
+a:hover {
+    color: var(--color-brown);
+    text-decoration: underline;
+}
+
+/*
+  Elements
+ */
+
+body {
+    background-color: var(--color-beige);
+    margin: 0;
+    padding: 0;
+
+    font-family: "Lato", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1.5;
+}
+
+header {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    background-color: var(--color-yellow);
+}
+
+.container {
+    width: 100%;
+    max-width: 80rem;
+    margin: 0 auto;
+}
+
+.container.flex {
+    display: flex;
+    gap: 2rem;
+}
+.container.flex.space-between {
+    justify-content: space-between;
+}
+.container.flex.align-flex-end {
+    align-items: flex-end;
+}
+
+.container .element {
+
+}
+
+.profile-picture {
+    border-radius: 50%;
+    max-width: 8rem;
+    margin-right: 2rem;
+}
+
+.photo-50 figure {
+    width: 50%;
+    margin: 1rem 0 2rem 0;
+}
+
+figure img {
+    width: 100%;
+}
+figcaption {
+    margin: .5rem 0;
+}
+
+footer {
+    margin-top: 8rem;
+    padding: 2rem 0;
+    min-height: 6rem;
+
+    background-color: var(--color-brownlight);
+}
+
+footer .container .element {
+    width: 50%;
+}
+
+/*
+  Youtube responsive video container
+ */
+.youtube-video-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+.youtube-video-container::after {
+    display: block;
+    content: "";
+    padding-top: 56.25%;
+}
+
+.youtube-video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+@media (max-width: 80rem) {
+    .container {
+        max-width: 90%;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        max-width: 96%;
+    }
+
+    .container.flex {
+        display: block
+    }
+
+    .container .element {
+        text-align: center;
+    }
+
+    .photo-50 figure {
+        width: 100%;
+
+    }
+
+    footer .container .element {
+        text-align: left;
+    }
+}
+
